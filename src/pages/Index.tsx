@@ -5,17 +5,49 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
+interface CadastralData {
+  cadastralNumber: string;
+  pointsCount: number;
+  area: number;
+  cadastralCost: number;
+  category: string;
+  address: string;
+}
+
 const Index = () => {
   const [cadastralNumber, setCadastralNumber] = useState('');
   const [pointsCount, setPointsCount] = useState(0);
   const [isCalculated, setIsCalculated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [cadastralData, setCadastralData] = useState<CadastralData | null>(null);
 
   const pricePerPoint = 1000;
 
-  const handleCalculate = () => {
-    const randomPoints = Math.floor(Math.random() * 20) + 4;
-    setPointsCount(randomPoints);
-    setIsCalculated(true);
+  const handleCalculate = async () => {
+    setIsLoading(true);
+    setError('');
+    setIsCalculated(false);
+
+    try {
+      const response = await fetch(
+        `https://functions.poehali.dev/88b420f9-0d05-40b4-9a44-9cc51ac92076?cadastralNumber=${encodeURIComponent(cadastralNumber)}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка при получении данных');
+      }
+
+      const data: CadastralData = await response.json();
+      setCadastralData(data);
+      setPointsCount(data.pointsCount);
+      setIsCalculated(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Участок не найден');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const totalCost = pointsCount * pricePerPoint;
@@ -74,14 +106,32 @@ const Index = () => {
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-destructive/10 border-2 border-destructive/20 p-4 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Icon name="AlertCircle" className="text-destructive flex-shrink-0 mt-1" size={20} />
+                    <p className="text-sm text-destructive font-medium">{error}</p>
+                  </div>
+                </div>
+              )}
+
               <Button
                 onClick={handleCalculate}
-                disabled={!cadastralNumber}
-                className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                disabled={!cadastralNumber || isLoading}
+                className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity disabled:opacity-50"
                 size="lg"
               >
-                <Icon name="Search" className="mr-2" size={20} />
-                Рассчитать стоимость
+                {isLoading ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 animate-spin" size={20} />
+                    Получение данных...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Search" className="mr-2" size={20} />
+                    Рассчитать стоимость
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -113,6 +163,18 @@ const Index = () => {
                       <span className="text-muted-foreground font-medium">Участок:</span>
                       <span className="font-mono font-semibold">{cadastralNumber}</span>
                     </div>
+                    {cadastralData?.address && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground font-medium">Адрес:</span>
+                        <span className="text-sm">{cadastralData.address}</span>
+                      </div>
+                    )}
+                    {cadastralData?.area && cadastralData.area > 0 && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground font-medium">Площадь:</span>
+                        <span className="font-semibold">{cadastralData.area.toLocaleString('ru-RU')} м²</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-muted-foreground font-medium">Количество точек:</span>
                       <span className="text-2xl font-bold text-primary">{pointsCount}</span>
