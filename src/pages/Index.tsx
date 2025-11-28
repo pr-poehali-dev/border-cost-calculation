@@ -12,6 +12,7 @@ interface CadastralData {
   cadastralCost: number;
   category: string;
   address: string;
+  estimated?: boolean;
 }
 
 const Index = () => {
@@ -159,6 +160,12 @@ const Index = () => {
               ) : (
                 <div className="space-y-6 animate-fade-in">
                   <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-xl border-2 border-primary/20">
+                    {cadastralData?.estimated && (
+                      <div className="mb-3 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
+                        <Icon name="Info" className="text-yellow-600" size={16} />
+                        <span className="text-xs text-yellow-700">Расчётные данные</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-muted-foreground font-medium">Участок:</span>
                       <span className="font-mono font-semibold">{cadastralNumber}</span>
